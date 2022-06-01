@@ -1,9 +1,12 @@
 package mosaik.scala.dsl
 
 import org.ergoplatform.mosaik.model.actions.{Action, DialogAction}
-import org.ergoplatform.mosaik.model.ui.layout.Box
+import org.ergoplatform.mosaik.model.ui.{ViewGroup, ForegroundColor, ViewElement}
+import org.ergoplatform.mosaik.model.ui.layout.{HAlignment, Column, Padding, Box}
+import org.ergoplatform.mosaik.model.ui.text.{Button, LabelStyle, Label}
 import org.ergoplatform.mosaik.model.{MosaikContext, MosaikManifest, ViewContent, MosaikApp}
 
+import java.text.NumberFormat.Style
 import java.util.UUID
 
 extension[T] (x: T)
@@ -96,3 +99,56 @@ private def buildDialogAction(message: String): DialogAction = {
   dialogAction
 }
 
+extension[G <: ViewGroup] (g: G)
+  def groupElement[V <: ViewElement](viewElement: V)(init: V ?=> Unit): V = {
+    g.addChild(viewElement)
+    init(using viewElement)
+    viewElement
+  }
+
+def viewElement[V <: ViewElement](viewElement: V)(init: V ?=> Unit)(using view: ViewContent): V = {
+  view.setView(viewElement)
+  init(using viewElement)
+  viewElement
+}
+
+def box(init: Box ?=> Unit)(using view: ViewContent): Box = {
+  viewElement(new Box())(init)
+}
+
+def column(padding: Option[Padding] = None)(init: Column ?=> Unit)(using view: ViewContent): Column = {
+  viewElement(new Column().apply(c ?=>
+    padding.foreach(c.setPadding)
+  ))(init)
+}
+
+def button[G <: ViewGroup]
+    (text: String, style: Option[Button.ButtonStyle] = None)
+    (init: Button ?=> Unit = {})
+    (using g: G): Button = {
+  g.groupElement(new Button().apply(b ?=> {
+    b.setText(text)
+    style.foreach(b.setStyle)
+  }))(init)
+}
+
+def label[G <: ViewGroup]
+    (text: String, style: Option[LabelStyle] = None,
+        textAlignment: Option[HAlignment] = None,
+        textColor: Option[ForegroundColor] = None)
+    (init: Label ?=> Unit = {})
+    (using g: G): Label = {
+  g.groupElement(new Label().apply(l ?=> {
+    l.setText(text)
+    style.foreach(l.setStyle)
+    textAlignment.foreach(l.setTextAlignment)
+    textColor.foreach(l.setTextColor)
+  }))(init)
+}
+
+def layout
+    (HAlignment: HAlignment, weight: Int = 0)
+    (init: ViewGroup ?=> Unit)
+    (using c: Column): Unit = {
+  init
+}
